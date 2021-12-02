@@ -1,0 +1,48 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TemptingBeef
+
+//@version=5
+strategy("CVD Strategy", overlay=false, margin_long=1, margin_short=1)
+
+ema_len = input(200, title='EMA Length')
+
+vbuy = 0.0
+vsell = 0.0
+
+if close > open
+    vbuy := volume * math.abs(open / close - 1)
+    vbuy
+if close < open
+    vsell := volume * math.abs(open / close - 1)
+    vsell
+
+delta = ta.cum(vbuy - vsell)
+ema = ta.ema(delta, ema_len)
+
+delta_color = delta >= ema ? color.new(#3eb370, 0) : color.new(#e9546b, 0)
+ema_color = delta >= ema ? color.new(#3eb370, 100) : color.new(#e9546b, 100)
+fill_color = delta >= ema ? color.new(#3eb370, 70) : color.new(#e9546b, 70)
+
+plot_delta = plot(delta, title='CVD', color=delta_color, linewidth=2)
+plot_ema = plot(ema, title='CVD EMA', color=ema_color)
+fill(plot_delta, plot_ema, color=fill_color, transp=90)
+
+longCondition = ta.crossover(delta, ema)
+shortCondition = ta.crossunder(delta, ema)
+if(longCondition)
+    strategy.entry("Long", strategy.long)
+if(shortCondition)
+    strategy.entry("Short", strategy.short)
+
+//Risk Model
+// percentAsPoints(pcnt) =>
+//     strategy.position_size != 0 ? math.round(pcnt / 100.0 * strategy.position_avg_price / syminfo.mintick) : float(na)
+
+// longTakeProfit = strategy.position_avg_price + percentAsPoints(5) * syminfo.mintick * strategy.position_size / math.abs(strategy.position_size)
+// longStopLoss = strategy.position_avg_price - percentAsPoints(2.5) * syminfo.mintick * strategy.position_size / math.abs(strategy.position_size)
+// shortTakeProfit = strategy.position_avg_price - percentAsPoints(5) * syminfo.mintick * strategy.position_size / math.abs(strategy.position_size)
+// shortStopLoss = strategy.position_avg_price + percentAsPoints(2.5) * syminfo.mintick * strategy.position_size / math.abs(strategy.position_size)
+
+// if strategy.position_size > 0
+//     strategy.exit('Long TP', from_entry='Long', limit=longTakeProfit, stop=longStopLoss)
+//     strategy.exit('Short TP', from_entry='Short', limit=shortTakeProfit, stop=shortStopLoss)
